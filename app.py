@@ -30,16 +30,17 @@ quotes = [
 if "random_quote" not in st.session_state:
     st.session_state.random_quote = random.choice(quotes)
 
-# 📌 **UI：标题 + 精句**
-st.markdown("<h1 style='text-align: center; color: #FF4B4B;'>霍兰德职业兴趣测试</h1>", unsafe_allow_html=True)
+# 📌 **UI：标题**
+st.markdown("<h1 style='text-align: center; color: #FF4B4B; font-weight: bold;'>霍兰德职业兴趣测试</h1>", unsafe_allow_html=True)
 
-# ✅ **逐行显示文本，确保换行**
-st.write("💡 **今日提示：**")
-quote_lines = st.session_state.random_quote.split("。")  # 拆分成单独的句子
+# ✅ **副标题：今日提示**
+st.markdown(f"""
+</h2>
+<p style='text-align: center; font-size:20px; color: black; font-weight: bold;'>
+👉 {st.session_state.random_quote}
+</p>
+""", unsafe_allow_html=True)
 
-for line in quote_lines:
-    if line.strip():  # 跳过空行
-        st.write(f"👉 {line.strip()}。")  # 逐行输出，确保换行
 
 
 # 📌 **读取 Excel 数据**
