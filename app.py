@@ -6,14 +6,25 @@ file_path = "职业生涯规划6个代码.xlsx"
 xls = pd.ExcelFile(file_path)
 
 def clean_data(df):
+    """
+    解析霍兰德代码表格，提取低/中/高对应的解读文本和总结
+    """
+    df.columns = df.columns.str.strip()  # 🚀 处理列名，去掉可能的空格，防止 "总结 " 解析失败
     parsed_data = {}
     levels = ["低", "中", "高"]
+
+    summary_index = df.columns.get_loc("总结") if "总结" in df.columns else None
+
     for _, row in df.iterrows():
-        level = str(row.iloc[0]).strip()
-        text = str(row.iloc[1]).strip()
-        if level in levels and pd.notna(text):
-            parsed_data[level] = text
+        level = str(row.iloc[0]).strip()  # 获取低/中/高
+        text = str(row.iloc[1]).strip() if pd.notna(row.iloc[1]) else "暂无解读"
+        summary = str(row.iloc[summary_index]).strip() if summary_index is not None and pd.notna(row.iloc[summary_index]) else "暂无总结"
+
+        if level in levels:
+            parsed_data[level] = {"text": text, "summary": summary}  # 存储解读和总结
+
     return parsed_data
+
 
 holland_data = {
     "R": clean_data(pd.read_excel(xls, sheet_name='R')),
@@ -24,25 +35,31 @@ holland_data = {
     "C": clean_data(pd.read_excel(xls, sheet_name='C')),
 }
 
-def clean_data(df):
+def get_holland_report(scores):
     """
-    解析霍兰德代码表格，提取低/中/高对应的解读文本和总结
+    根据用户输入的 6 个分值，自动生成解读报告（包含解读文本 + 总结）
     """
-    df.columns = df.columns.str.strip()  # 去除列名空格，防止 "总结 " 解析失败
-    parsed_data = {}
-    levels = ["低", "中", "高"]
+    report = []
+    summary_report = []
+    
+    for code, score in scores.items():
+        if score < 15:
+            level = "低"
+        elif 15 <= score <= 20:
+            level = "中"
+        else:
+            level = "高"
 
-    summary_index = df.columns.get_loc("总结") if "总结" in df.columns else None
+        data = holland_data.get(code, {}).get(level, {})
+        text = data.get("text", "暂无解读")  # 🚀 确保即使数据为空也不会报错
+        summary = data.get("summary", "暂无总结")
 
-    for _, row in df.iterrows():
-        level = str(row.iloc[0]).strip()  # 低 / 中 / 高
-        text = str(row.iloc[1]).strip() if pd.notna(row.iloc[1]) else "暂无解读"
-        summary = str(row.iloc[summary_index]).strip() if summary_index is not None and pd.notna(row.iloc[summary_index]) else "暂无总结"
+        report.append(f"**{code}（{level}）**: {text}")
+        summary_report.append(f"**{code} 总结**: {summary}")
 
-        if level in levels:
-            parsed_data[level] = {"text": text, "summary": summary}  # 存储解读和总结
+    return "\n\n".join(report), "\n\n".join(summary_report)
 
-    return parsed_data
+
 
 # ========== Streamlit UI ==========
 st.title("霍兰德职业兴趣测试 🔍")
@@ -95,8 +112,8 @@ if st.button("📌 **提交并查看解读**"):
     report, summary = get_holland_report(scores)
     
     st.markdown("## 🎯 **你的霍兰德解读报告**")
-    st.markdown(report)
+    st.markdown(report if report else "暂无解读内容")
     
     st.markdown("## 📌 **你的总结**")
-    st.markdown(summary)
+    st.markdown(summary if summary else "暂无总结")
 
