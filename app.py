@@ -24,23 +24,25 @@ holland_data = {
     "C": clean_data(pd.read_excel(xls, sheet_name='C')),
 }
 
-def get_holland_report(scores):
+def clean_data(df):
     """
-    根据用户输入的 6 个分值，自动生成解读报告
+    解析霍兰德代码表格，提取低/中/高对应的解读文本和总结
     """
-    report = []
-    for code, score in scores.items():
-        if score < 15:
-            level = "低"
-        elif 15 <= score <= 20:
-            level = "中"
-        else:
-            level = "高"
+    df.columns = df.columns.str.strip()  # 去除列名空格，防止 "总结 " 解析失败
+    parsed_data = {}
+    levels = ["低", "中", "高"]
 
-        description = holland_data.get(code, {}).get(level, "暂无解读")
-        report.append(f"**{code}（{level}）**: {description}")
+    summary_index = df.columns.get_loc("总结") if "总结" in df.columns else None
 
-    return "\n\n".join(report)
+    for _, row in df.iterrows():
+        level = str(row.iloc[0]).strip()  # 低 / 中 / 高
+        text = str(row.iloc[1]).strip() if pd.notna(row.iloc[1]) else "暂无解读"
+        summary = str(row.iloc[summary_index]).strip() if summary_index is not None and pd.notna(row.iloc[summary_index]) else "暂无总结"
+
+        if level in levels:
+            parsed_data[level] = {"text": text, "summary": summary}  # 存储解读和总结
+
+    return parsed_data
 
 # ========== Streamlit UI ==========
 st.title("霍兰德职业兴趣测试 🔍")
@@ -88,6 +90,11 @@ st.markdown(f"""
 # 提交按钮
 if st.button("📌 **提交并查看解读**"):
     scores = {"R": r, "I": i, "A": a, "S": s, "E": e, "C": c}
-    report = get_holland_report(scores)
+    report, summary = get_holland_report(scores)
+    
     st.markdown("## 🎯 **你的霍兰德解读报告**")
     st.markdown(report)
+    
+    st.markdown("## 📌 **你的总结**")
+    st.markdown(summary)
+

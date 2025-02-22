@@ -21,26 +21,30 @@ df_C = pd.read_excel(xls, sheet_name='C')
 print("R 代码数据预览：")
 print(df_R.head())  # 只显示 R 代码的前几行数据
 
-def clean_data(df):
+def get_holland_report(scores):
     """
-    解析霍兰德代码表格，提取低/中/高对应的解读文本和总结
+    根据用户输入的 6 个分值，自动生成解读报告（包含解读文本 + 总结）
     """
-    df.columns = df.columns.str.strip()  # 🚀 去掉列名的空格，防止 "总结 " 解析失败
+    report = []
+    summary_report = []
+    
+    for code, score in scores.items():
+        if score < 15:
+            level = "低"
+        elif 15 <= score <= 20:
+            level = "中"
+        else:
+            level = "高"
 
-    parsed_data = {}
-    levels = ["低", "中", "高"]
+        data = holland_data.get(code, {}).get(level, {"text": "暂无解读", "summary": "暂无总结"})
+        text = data["text"]
+        summary = data["summary"]
+        
+        report.append(f"**{code}（{level}）**: {text}")
+        summary_report.append(f"**{code} 总结**: {summary}")
 
-    summary_index = df.columns.get_loc("总结") if "总结" in df.columns else None
+    return "\n\n".join(report), "\n\n".join(summary_report)
 
-    for _, row in df.iterrows():
-        level = str(row.iloc[0]).strip()  # 获取第一列的"低/中/高"
-        text = str(row.iloc[1]).strip() if pd.notna(row.iloc[1]) else "暂无解读"  # 解读文本
-        summary = str(row.iloc[summary_index]).strip() if summary_index is not None and pd.notna(row.iloc[summary_index]) else "暂无总结"  # 总结文本
-
-        if level in levels:
-            parsed_data[level] = {"text": text, "summary": summary}  # 存储解读和总结
-
-    return parsed_data
 
 
 
