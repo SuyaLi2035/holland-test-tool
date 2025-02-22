@@ -47,7 +47,6 @@ def get_holland_report(scores):
 
 
 
-
 # 处理所有代码
 holland_data = {
     "R": clean_data(pd.read_excel(xls, sheet_name='R')),

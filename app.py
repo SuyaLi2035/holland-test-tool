@@ -90,6 +90,8 @@ st.markdown(f"""
 # 提交按钮
 if st.button("📌 **提交并查看解读**"):
     scores = {"R": r, "I": i, "A": a, "S": s, "E": e, "C": c}
+    
+    # 🚀 确保 get_holland_report() 被正确调用
     report, summary = get_holland_report(scores)
     
     st.markdown("## 🎯 **你的霍兰德解读报告**")
