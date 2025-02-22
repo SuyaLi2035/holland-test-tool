@@ -25,22 +25,23 @@ def clean_data(df):
     """
     解析霍兰德代码表格，提取低/中/高对应的解读文本和总结
     """
-    df.columns = df.columns.str.strip()  # 去除列名空格
+    df.columns = df.columns.str.strip()  # 🚀 去掉列名的空格，防止 "总结 " 解析失败
+
     parsed_data = {}
     levels = ["低", "中", "高"]
 
-    # 获取列索引，防止列名有空格
     summary_index = df.columns.get_loc("总结") if "总结" in df.columns else None
 
     for _, row in df.iterrows():
-        level = str(row.iloc[0]).strip()  # 获取"低/中/高"
+        level = str(row.iloc[0]).strip()  # 获取第一列的"低/中/高"
         text = str(row.iloc[1]).strip() if pd.notna(row.iloc[1]) else "暂无解读"  # 解读文本
         summary = str(row.iloc[summary_index]).strip() if summary_index is not None and pd.notna(row.iloc[summary_index]) else "暂无总结"  # 总结文本
-        
+
         if level in levels:
-            parsed_data[level] = {"text": text, "summary": summary}
+            parsed_data[level] = {"text": text, "summary": summary}  # 存储解读和总结
 
     return parsed_data
+
 
 
 # 处理所有代码
