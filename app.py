@@ -1,8 +1,50 @@
 import streamlit as st
 import pandas as pd
-import random  # 🚀 导入随机模块
+import random
+import openai  # 🚀 导入 OpenAI 兼容的 DeepSeek API
 
-# ✨ 40 句精句库
+# 📌 **DeepSeek API Key（请替换为你的 API Key）**
+DEEPSEEK_API_KEY = "sk-b2QUOEmlAArQ528ekQr3FzyEiI9shAJSyJW5jI4Dav8HAVzp"  
+
+# ✅ **配置 OpenAI 访问 DeepSeek**
+openai.api_base = "https://api.deepseek.com/v1"  # DeepSeek API 地址
+openai.api_key = DEEPSEEK_API_KEY
+
+# 📌 **调用 DeepSeek API 进行总结**
+
+import openai
+
+def summarize_report(report):
+    """
+    使用 DeepSeek API 进行总结，并通过你的转发 API 进行请求
+    """
+    # 你的 API 配置
+    client = openai.OpenAI(
+        base_url="https://tbnx.plus7.plus/v1",  # ✅ 替换为你的中转 API 地址
+        api_key="sk-b2QUOEmlAArQ528ekQr3FzyEiI9shAJSyJW5jI4Dav8HAVzp"  # ✅ 替换为你的 API Key
+    )
+    
+
+    try:
+        # 发送请求
+        response = client.chat.completions.create(
+            model="deepseek-chat",
+            messages=[
+                {"role": "system", "content": "你是一个国际职业生涯规划师，请生成一段清晰、精准的总结，总结控制在200-300字区间，用“你”描述，不要使用该用户，结尾给出1-2句简短的建议，语言要温和，客户听了会很舒服，不需要强调职业方向，只需要描述客户是一个什么样的人。，"},
+                {"role": "user", "content": f"请总结以下霍兰德测试报告内容：\n\n{report}"}
+            ]
+        )
+
+        # 提取返回的总结
+        summary_text = response.choices[0].message.content
+        return summary_text
+
+    except Exception as e:
+        return f"❌ 总结失败：{str(e)}"
+
+
+
+# 📌 **随机精句（仅在网页刷新时变化）**
 quotes = [
     "别人的孩子，成绩好、会规划、懂目标，而你家孩子，只会等着你安排。",
     "你在焦虑补课，他在焦虑作业，最后补了个寂寞，考了个遗憾。",
@@ -26,7 +68,7 @@ quotes = [
     "来做规划，不是给孩子增加负担，而是让他少走弯路，赢在起点。",
 ]
 
-# ✅ **使用 session_state 让精句只在网页刷新时变化**
+
 if "random_quote" not in st.session_state:
     st.session_state.random_quote = random.choice(quotes)
 
@@ -35,37 +77,29 @@ st.markdown("<h1 style='text-align: center; color: #FF4B4B; font-weight: bold;'>
 
 # ✅ **副标题：今日提示**
 st.markdown(f"""
-</h2>
-<p style='text-align: center; font-size:20px; color: black; font-weight: bold;'>
-👉 {st.session_state.random_quote}
-</p>
+<h2 style='text-align: center; color: #007BFF; font-size:24px; font-weight: bold;'>💡 今日提示：</h2>
+<p style='text-align: center; font-size:20px; color: black; font-weight: bold;'>👉 {st.session_state.random_quote}</p>
 """, unsafe_allow_html=True)
-
-
 
 # 📌 **读取 Excel 数据**
 file_path = "职业生涯规划6个代码.xlsx"
 xls = pd.ExcelFile(file_path)
 
-# ✅ **确保 `clean_data()` 在 `holland_data` 之前定义**
 def clean_data(df):
-    """
-    解析霍兰德代码表格，提取低/中/高的解读文本 + 总结
-    """
+    """ 解析霍兰德代码表格，提取低/中/高的解读文本 + 总结 """
     parsed_data = {}
     levels = ["低", "中", "高"]
     
     for _, row in df.iterrows():
         level = str(row.iloc[0]).strip()
         text = str(row.iloc[1]).strip()
-        summary = str(row.iloc[2]).strip() if len(row) > 2 else "暂无总结"  # 处理总结字段
+        summary = str(row.iloc[2]).strip() if len(row) > 2 else "暂无总结"
         
         if level in levels and pd.notna(text):
-            parsed_data[level] = {"text": text, "summary": summary}  # ✅ 返回文本和总结
+            parsed_data[level] = {"text": text, "summary": summary}
     
     return parsed_data
 
-# ✅ **调用 clean_data()**
 holland_data = {
     "R": clean_data(pd.read_excel(xls, sheet_name='R')),
     "I": clean_data(pd.read_excel(xls, sheet_name='I')),
@@ -75,18 +109,14 @@ holland_data = {
     "C": clean_data(pd.read_excel(xls, sheet_name='C')),
 }
 
-# ✅ **优化 `get_holland_report()`，确保结果按照分值从高到低排序**
 def get_holland_report(scores):
-    """
-    根据用户输入的 6 个分值，自动生成解读报告（包含解读文本 + 总结），并按照分值从高到低排序
-    """
+    """ 生成解读报告（包含解读文本 + 总结），并按照分值从高到低排序 """
     report = []
     summary_report = []
     
-    # 1️⃣ **按照分值从高到低排序**
     sorted_scores = sorted(scores.items(), key=lambda x: x[1], reverse=True)
 
-    for code, score in sorted_scores:  # 🔥 这里用排序后的顺序
+    for code, score in sorted_scores:
         if score < 15:
             level = "低"
         elif 15 <= score <= 20:
@@ -94,7 +124,6 @@ def get_holland_report(scores):
         else:
             level = "高"
 
-        # 2️⃣ **获取解读文本和总结**
         data = holland_data.get(code, {}).get(level, {"text": "暂无解读", "summary": "暂无总结"})
         text = data["text"]
         summary = data["summary"]
@@ -104,7 +133,7 @@ def get_holland_report(scores):
 
     return "\n\n".join(report), "\n\n".join(summary_report)
 
-# ✅ **输入框（移除滑块）**
+# 📌 **输入框**
 col1, col2, col3 = st.columns(3)
 
 with col1:
@@ -121,13 +150,19 @@ with col3:
 
 st.markdown("---")  # 添加分割线
 
-# ✅ **提交按钮**
+# 📌 **提交按钮**
 if st.button("📌 **提交并查看解读**", key="submit_button"):
     scores = {"R": r, "I": i, "A": a, "S": s, "E": e, "C": c}
     report, summary = get_holland_report(scores)
-    
-    st.markdown("## 🎯 **你的霍兰德解读报告**")
-    st.markdown(report)
 
-    st.markdown("## 📌 **你的总结**")
-    st.markdown(summary)
+    # ✅ **第一部分：解读报告（Excel）**
+    st.markdown("## 📌 **你的解读报告**")
+    st.markdown(report)  # 这里是 Excel 匹配出的解读内容
+
+    # ✅ **第二部分：AI 生成总结**
+    with st.spinner("🤖 AI 正在总结你的报告，请稍候..."):
+        ai_summary = summarize_report(report)
+
+    st.markdown("## 🤖 **AI 生成总结**")
+    st.markdown(ai_summary)
+
