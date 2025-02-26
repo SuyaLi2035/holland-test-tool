@@ -1,5 +1,6 @@
+streamlit
 pandas
 openpyxl
-streamlit
-PyPDF2  # ✅ 确保这一行存在
-python-docx  # ✅ 解析 Word 文件
+PyPDF2
+python-docx
+openai
